@@ -44,40 +44,22 @@ body{
 .sidebar-add{width:90%;margin-top:10px;}
 .main{flex:1;display:flex;flex-direction:column;}
 .topbar{
-  backdrop-filter:blur(14px);
-  background:var(--glass);
-  border-bottom:1px solid var(--glass-strong);
-  display:flex;
-  flex-direction:column;
-  position:relative;
+  backdrop-filter:blur(14px); background:var(--glass); border-bottom:1px solid var(--glass-strong);
+  display:flex; flex-direction:column; position:relative;
 }
 .tabs{display:flex;padding:8px;gap:8px;overflow-x:auto;}
 .tab{background:var(--glass);padding:6px 14px;border-radius:20px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:.2s;min-width:40px;max-width:200px;overflow:hidden;}
 .tab.active{background:var(--accent);box-shadow:0 0 12px var(--accent-glow);}
 .tab span.title{white-space:nowrap;text-overflow:ellipsis;overflow:hidden;flex-grow:1;}
 .tab-close{cursor:pointer;color:#ff5c5c;}
-.tab-close:hover{opacity:0.8;}
 .toolbar{display:flex;gap:8px;padding:10px;align-items:center;}
 button{background:var(--glass);border:1px solid var(--glass-strong);color:var(--text);padding:6px 12px;border-radius:12px;cursor:pointer;}
 .address{flex:1;padding:10px 14px;border:none;border-radius:20px;background:var(--glass);color:var(--text);outline:none;}
-select{background:var(--glass);border:1px solid var(--glass-strong);color:var(--text);padding:4px;border-radius:6px;outline:none;}
-select option{background:var(--bg);color:var(--text);}
 .browser{flex:1;position:relative;}
 iframe{position:absolute;width:100%;height:100%;border:none;display:none;opacity:0;transition:opacity .2s ease;}
 iframe.active{display:block;opacity:1;}
 iframe.loading{opacity:.4;}
-.loading-bar {
-  position: absolute;
-  bottom: -1px; 
-  left: 0;
-  height: 3px;
-  background: var(--accent);
-  box-shadow: 0 0 10px var(--accent-glow);
-  width: 0%;
-  opacity: 0;
-  transition: width 0.3s ease, opacity 0.3s ease;
-  z-index: 100;
-}
+.loading-bar { position: absolute; bottom: -1px; left: 0; height: 3px; background: var(--accent); box-shadow: 0 0 10px var(--accent-glow); width: 0%; opacity: 0; transition: width 0.3s ease, opacity 0.3s ease; z-index: 100; }
 </style>
 </head>
 <body>
@@ -109,7 +91,7 @@ iframe.loading{opacity:.4;}
 <div id="settingsPanel" style="position:absolute;top:50px;right:20px;width:260px;background:rgba(20,30,50,0.95);color:#e6edf3;border:1px solid rgba(255,255,255,0.2);border-radius:12px;padding:16px;display:none;z-index:999;">
   <h3 style="margin-top:0;">Settings</h3>
   <label style="display:block; margin-bottom:10px;">Search Engine: 
-    <select id="searchEnginePicker" style="width:100%; margin-top:4px;">
+    <select id="searchEnginePicker" style="width:100%; background: #0b1120; color: white; border: 1px solid var(--glass-strong); padding: 5px; border-radius: 5px;">
       <option value="google">Google</option>
       <option value="duckduckgo">DuckDuckGo</option>
       <option value="bing">Bing</option>
@@ -132,7 +114,7 @@ const browser = document.getElementById("browser");
 const tabsDiv = document.getElementById("tabs");
 const address = document.getElementById("address");
 const loadingBar = document.getElementById("loadingBar");
-let tabs = [], currentTab = null, draggedTab = null, loadingInterval;
+let tabs = [], currentTab = null, loadingInterval;
 
 function applyTheme(){
   document.documentElement.style.setProperty("--accent",settings.accent);
@@ -160,19 +142,8 @@ function addToSidebar(){if(!currentTab)return;const url=currentTab.history[curre
 if(!url||settings.sidebar.find(l=>l.url===url))return;
 settings.sidebar.push({title:currentTab.title.textContent||"New Tab",url});saveAll();}
 
-function startLoading() {
-  clearInterval(loadingInterval); loadingBar.style.opacity = "1"; loadingBar.style.width = "15%";
-  let p = 15; loadingInterval = setInterval(() => { p += (90 - p) * 0.05; loadingBar.style.width = p + "%"; }, 200);
-}
-function stopLoading() {
-  clearInterval(loadingInterval); loadingBar.style.width = "100%"; 
-  setTimeout(() => { loadingBar.style.opacity = "0"; setTimeout(() => { loadingBar.style.width = "0%"; }, 300); }, 300);
-}
-
 function resolveInput(input){
   const trimmed = input.trim(), lower = trimmed.toLowerCase();
-  const shortcuts={desmos:"https://www.desmos.com",gmail:"https://mail.google.com",youtube:"https://www.youtube.com"};
-  if(shortcuts[lower]) return shortcuts[lower];
   if(/^https?:\/\//i.test(trimmed)) return trimmed;
   if(/^[^\s]+\.[a-z]{2,}(\/.*)?$/i.test(trimmed)) return "https://" + trimmed;
   const encoded = encodeURIComponent(trimmed);
@@ -181,23 +152,18 @@ function resolveInput(input){
   return `https://www.google.com/search?q=${encoded}&igu=1`;
 }
 
-// PROXIED NAVIGATION LOGIC
+// PROXIED NAVIGATION (The Railway Fix)
 function navigate(input,isShortcut=false){
   if(!currentTab)return;
   const url=isShortcut?input:resolveInput(input); if(!url)return;
-  const tab=currentTab; tab.history=tab.history.slice(0,tab.index+1); 
-  tab.history.push(url); tab.index=tab.history.length-1;
+  const tab=currentTab; tab.history=tab.history.slice(0,tab.index+1); tab.history.push(url); tab.index=tab.history.length-1;
   tab.iframe.classList.add("loading"); startLoading();
-  
-  tab.iframe.onload=()=>{
-    tab.iframe.classList.remove("loading"); stopLoading();
-    try{tab.title.textContent = tab.iframe.contentDocument.title || new URL(url).hostname;}catch{tab.title.textContent = new URL(url).hostname;}
-    address.value=url;
-  }; 
-  // ROUTE THROUGH PROXY
-  const proxiedUrl = window.location.origin + "/proxy?url=" + encodeURIComponent(url);
-  tab.iframe.src=proxiedUrl;
+  tab.iframe.onload=()=>{ tab.iframe.classList.remove("loading"); stopLoading(); address.value=url; tab.title.textContent = new URL(url).hostname; }; 
+  tab.iframe.src= window.location.origin + "/proxy?url=" + encodeURIComponent(url);
 }
+
+function startLoading() { clearInterval(loadingInterval); loadingBar.style.opacity = "1"; loadingBar.style.width = "15%"; let p = 15; loadingInterval = setInterval(() => { p += (90 - p) * 0.05; loadingBar.style.width = p + "%"; }, 200); }
+function stopLoading() { clearInterval(loadingInterval); loadingBar.style.width = "100%"; setTimeout(() => { loadingBar.style.opacity = "0"; setTimeout(() => { loadingBar.style.width = "0%"; }, 300); }, 300); }
 
 function go(){const val=address.value.trim(); if(val)navigate(val);}
 address.addEventListener("keydown",e=>{if(e.key==="Enter")go();});
@@ -210,6 +176,29 @@ function newTab(){
   const cb = document.createElement("span"); cb.textContent = "×"; cb.className="tab-close"; cb.onclick = e => { e.stopPropagation(); closeTab(id); }; btn.appendChild(cb);
   btn.onclick = () => switchTab(id); tabsDiv.appendChild(btn); tab.button = btn; tab.title = ts;
   switchTab(id);
-  if(settings.particlesEnabled){
+  if(settings.particlesEnabled) injectParticles(iframe);
+}
+
+function injectParticles(iframe) {
     const d = iframe.contentDocument || iframe.contentWindow.document; d.open();
-    d.write(`<html><head><style>html,body{margin:0;padding:0;overflow:hidden;background:#0b1120;}canvas{display
+    d.write(`<html><head><style>html,body{margin:0;padding:0;overflow:hidden;background:#0b1120;}canvas{display:block;}</style></head><body><canvas id="pc"></canvas><script>const c=document.getElementById('pc'),ctx=c.getContext('2d');let w=c.width=window.innerWidth,h=c.height=window.innerHeight;const ps=Array.from({length:120},()=>({x:Math.random()*w,y:Math.random()*h,vx:(Math.random()-0.5)*1.2,vy:(Math.random()-0.5)*1.2,s:Math.random()*2+1.5}));function a(){ctx.clearRect(0,0,w,h);ps.forEach(p=>{p.x+=p.vx;p.y+=p.vy;if(p.x<0||p.x>w)p.vx*=-1;if(p.y<0||p.y>h)p.vy*=-1;ctx.fillStyle='rgba(79,156,255,0.8)';ctx.beginPath();ctx.arc(p.x,p.y,p.s,0,Math.PI*2);ctx.fill();});requestAnimationFrame(a);}a();<\/script></body></html>`);
+    d.close();
+}
+
+function switchTab(id){tabs.forEach(t=>{t.iframe.classList.remove("active"); t.button.classList.remove("active");if(t.id===id){currentTab=t; t.iframe.classList.add("active"); t.button.classList.add("active"); address.value=t.history[t.index]||"";}});}
+function closeTab(id){const t=tabs.find(x=>x.id===id); if(!t)return; t.iframe.remove(); t.button.remove(); tabs=tabs.filter(x=>x.id!==id); if(currentTab?.id===id){if(tabs.length)switchTab(tabs[0].id);else currentTab=null;}}
+function back(){if(currentTab&&currentTab.index>0){currentTab.index--; currentTab.iframe.src=window.location.origin+"/proxy?url="+encodeURIComponent(currentTab.history[currentTab.index]); address.value=currentTab.history[currentTab.index];}}
+function forward(){if(currentTab&&currentTab.index<currentTab.history.length-1){currentTab.index++; currentTab.iframe.src=window.location.origin+"/proxy?url="+encodeURIComponent(currentTab.history[currentTab.index]); address.value=currentTab.history[currentTab.index];}}
+function reload(){if(currentTab)currentTab.iframe.src=currentTab.iframe.src;}
+
+document.getElementById("settingsBtn").onclick=()=>document.getElementById("settingsPanel").style.display="block";
+document.getElementById("accentPicker").oninput=e=>{settings.accent=e.target.value;applyTheme();saveAll();};
+document.getElementById("sidebarCompactToggle").onchange=e=>{settings.sidebarCompact=e.target.checked;applySidebarMode();saveAll();};
+document.onclick=e=>{if(!document.getElementById("settingsPanel").contains(e.target)&&e.target.id!=="settingsBtn")document.getElementById("settingsPanel").style.display="none";};
+
+function saveAll(){localStorage.setItem("settings",JSON.stringify(settings)); renderSidebar(); applySidebarMode();}
+applyTheme(); newTab(); renderSidebar(); applySidebarMode();
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");
+</script>
+</body>
+</html>
