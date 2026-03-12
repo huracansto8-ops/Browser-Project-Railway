@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>CS3 Enhanced</title>
+<title>CS3</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#4f9cff">
@@ -17,254 +17,199 @@
 }
 *{box-sizing:border-box;}
 body{
-  margin:0; 
-  font-family:Inter,system-ui,sans-serif; 
-  background:linear-gradient(145deg,#0b1120,#0e1628); 
-  color:var(--text); 
-  height:100vh; 
-  overflow:hidden;
+  margin:0; font-family:Inter,system-ui; background:linear-gradient(145deg,#0b1120,#0e1628); color:var(--text); height:100vh; overflow:hidden;
 }
-.app{display:flex; height:100%; width:100%;}
+.app{display:flex;height:100%;width:100%;}
 .sidebar{
-  width:220px; 
-  background:var(--glass); 
-  backdrop-filter:blur(18px); 
-  border-right:1px solid var(--glass-strong);
-  display:flex; 
-  flex-direction:column; 
-  align-items:center; 
-  padding:12px 6px; 
-  position:relative; 
-  transition:width .25s ease; 
-  overflow:hidden;
+  width:220px; background:var(--glass); backdrop-filter:blur(18px); border-right:1px solid var(--glass-strong);
+  display:flex; flex-direction:column; align-items:center; padding:12px 6px; position:relative; transition:width .25s ease; overflow:hidden;
 }
-.sidebar.compact { width: 60px; }
-.main-area {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  position: relative;
+.sidebar.compact{width:65px;}
+.sidebar::before{
+  content:""; position:absolute; top:0; right:0; width:3px; height:100%;
+  background:linear-gradient(to bottom,var(--accent),transparent,var(--accent));
+  background-size:100% 200%; animation:beamFlow 4s linear infinite; box-shadow:0 0 18px var(--accent-glow);
 }
-.top-bar {
-  display: flex;
-  padding: 10px;
-  background: var(--glass);
-  border-bottom: 1px solid var(--glass-strong);
-  align-items: center;
-  gap: 10px;
+@keyframes beamFlow{from{background-position:0 0}to{background-position:0 200%}}
+.sidebar-top{display:flex;flex-direction:column;gap:8px;margin-bottom:15px;}
+.sidebar-links{flex:1;width:100%;display:flex;flex-direction:column;align-items:center;gap:10px;overflow-y:auto;}
+.sidebar-link{
+  width:90%; display:flex; align-items:center; gap:10px; padding:8px;
+  border-radius:14px; cursor:pointer; transition:.2s ease; font-size:14px;
 }
-#address {
-  flex: 1;
-  background: rgba(0,0,0,0.2);
-  border: 1px solid var(--glass-strong);
-  color: var(--text);
-  padding: 10px 15px;
-  border-radius: 8px;
-  outline: none;
-  font-size: 14px;
-  transition: border 0.2s;
+.sidebar-link img{width:22px;height:22px;border-radius:6px;}
+.sidebar-link:hover{background:rgba(255,255,255,0.05);box-shadow:0 0 14px var(--accent-glow);transform:translateX(4px);}
+.sidebar-link:active{transform:translateX(6px) scale(.96);box-shadow:0 0 20px var(--accent-glow);}
+.sidebar.compact .sidebar-link span{display:none;}
+.sidebar-add{width:90%;margin-top:10px;}
+.main{flex:1;display:flex;flex-direction:column;}
+.topbar{
+  backdrop-filter:blur(14px);
+  background:var(--glass);
+  border-bottom:1px solid var(--glass-strong);
+  display:flex;
+  flex-direction:column;
+  position:relative;
 }
-#address:focus {
-  border-color: var(--accent);
-}
-.browser-container {
-  flex: 1;
-  position: relative;
-}
-iframe {
-  width: 100%;
-  height: 100%;
-  border: none;
-  background: #fff;
-}
-iframe.loading {
-  opacity: 0.5;
-}
-/* Basic settings panel styling */
-#settingsPanel {
-  display: none;
+.tabs{display:flex;padding:8px;gap:8px;overflow-x:auto;}
+.tab{background:var(--glass);padding:6px 14px;border-radius:20px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:.2s;min-width:40px;max-width:200px;overflow:hidden;}
+.tab.active{background:var(--accent);box-shadow:0 0 12px var(--accent-glow);}
+.tab span.title{white-space:nowrap;text-overflow:ellipsis;overflow:hidden;flex-grow:1;}
+.tab-close{cursor:pointer;color:#ff5c5c;}
+.tab-close:hover{opacity:0.8;}
+.toolbar{display:flex;gap:8px;padding:10px;align-items:center;}
+button{background:var(--glass);border:1px solid var(--glass-strong);color:var(--text);padding:6px 12px;border-radius:12px;cursor:pointer;}
+.address{flex:1;padding:10px 14px;border:none;border-radius:20px;background:var(--glass);color:var(--text);outline:none;}
+select{background:var(--glass);border:1px solid var(--glass-strong);color:var(--text);padding:4px;border-radius:6px;outline:none;}
+select option{background:var(--bg);color:var(--text);}
+.browser{flex:1;position:relative;}
+iframe{position:absolute;width:100%;height:100%;border:none;display:none;opacity:0;transition:opacity .2s ease;}
+iframe.active{display:block;opacity:1;}
+iframe.loading{opacity:.4;}
+.loading-bar {
   position: absolute;
-  top: 50px;
-  left: 60px;
-  background: #1a2235;
-  border: 1px solid var(--glass-strong);
-  padding: 15px;
-  border-radius: 8px;
+  bottom: -1px; 
+  left: 0;
+  height: 3px;
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--accent-glow);
+  width: 0%;
+  opacity: 0;
+  transition: width 0.3s ease, opacity 0.3s ease;
   z-index: 100;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.5);
 }
-.settings-row { margin-bottom: 10px; display: flex; justify-content: space-between; gap: 10px; align-items: center; }
-button {
-  background: var(--glass-strong); color: var(--text); border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer;
-}
-button:hover { background: var(--accent); }
 </style>
 </head>
 <body>
 
 <div class="app">
   <div class="sidebar" id="sidebar">
-    <button id="newTabBtn" style="width:100%; margin-bottom: 10px;">+ New Tab</button>
-    <button id="settingsBtn" style="width:100%; margin-top: auto;">⚙ Settings</button>
+    <div class="sidebar-top"><button onclick="toggleIconMode()">⇔</button></div>
+    <div id="sidebarLinks" class="sidebar-links"></div>
+    <button class="sidebar-add" onclick="addToSidebar()">＋</button>
   </div>
-
-  <div id="settingsPanel">
-    <div class="settings-row">
-      <label>Accent Color</label>
-      <input type="color" id="accentColorPicker" value="#4f9cff">
+  <div class="main">
+    <div class="topbar">
+      <div class="tabs" id="tabs"></div>
+      <div class="toolbar">
+        <button onclick="back()">←</button>
+        <button onclick="forward()">→</button>
+        <button onclick="reload()">⟳</button>
+        <input id="address" class="address" placeholder="Search or enter web address">
+        <button onclick="go()">Go</button>
+        <button onclick="newTab()">＋</button>
+        <button id="settingsBtn">⚙️</button>
+      </div>
+      <div id="loadingBar" class="loading-bar"></div>
     </div>
-    <div class="settings-row">
-      <label>Compact Sidebar</label>
-      <input type="checkbox" id="sidebarCompactToggle">
-    </div>
-    <div class="settings-row">
-      <label>Particles</label>
-      <input type="checkbox" id="particleToggle">
-    </div>
-  </div>
-
-  <div class="main-area">
-    <div class="top-bar">
-      <input type="text" id="address" placeholder="Search Google or enter URL..." autocomplete="off">
-    </div>
-    <div class="browser-container">
-      <iframe id="browser-frame" src="about:blank"></iframe>
-    </div>
+    <div class="browser" id="browser"></div>
   </div>
 </div>
 
+<div id="settingsPanel" style="position:absolute;top:50px;right:20px;width:260px;background:rgba(20,30,50,0.95);color:#e6edf3;border:1px solid rgba(255,255,255,0.2);border-radius:12px;padding:16px;display:none;z-index:999;">
+  <h3 style="margin-top:0;">Settings</h3>
+  <label style="display:block; margin-bottom:10px;">Search Engine: 
+    <select id="searchEnginePicker" style="width:100%; margin-top:4px;">
+      <option value="google">Google</option>
+      <option value="duckduckgo">DuckDuckGo</option>
+      <option value="bing">Bing</option>
+    </select>
+  </label>
+  <label style="display:block; margin-bottom:10px;">Accent Color: <input type="color" id="accentPicker" value="#4f9cff" style="float:right;"></label>
+  <label style="display:block; margin-bottom:10px;">Sidebar Compact: <input type="checkbox" id="sidebarCompactToggle" style="float:right;"></label>
+  <label style="display:block; margin-bottom:10px;">Particle Background: <input type="checkbox" id="particleToggle" checked style="float:right;"></label>
+</div>
+
 <script>
-// --- Settings & UI Logic ---
-let settings = JSON.parse(localStorage.getItem("settings")) || {
-  accent: "#4f9cff",
-  sidebarCompact: false,
-  particlesEnabled: true
-};
+let settings = JSON.parse(localStorage.getItem("settings") || "{}");
+settings.sidebar = settings.sidebar || [];
+settings.sidebarCompact = settings.sidebarCompact || false;
+settings.accent = settings.accent || "#4f9cff";
+settings.particlesEnabled = settings.particlesEnabled ?? true;
+settings.searchEngine = settings.searchEngine || "google";
 
-const settingsPanel = document.getElementById("settingsPanel");
-const settingsBtn = document.getElementById("settingsBtn");
-const accentColorPicker = document.getElementById("accentColorPicker");
-const sidebarCompactToggle = document.getElementById("sidebarCompactToggle");
-const particleToggle = document.getElementById("particleToggle");
-const sidebar = document.getElementById("sidebar");
+const browser = document.getElementById("browser");
+const tabsDiv = document.getElementById("tabs");
+const address = document.getElementById("address");
+const loadingBar = document.getElementById("loadingBar");
+let tabs = [], currentTab = null, draggedTab = null, loadingInterval;
 
-function applyTheme() {
-  document.documentElement.style.setProperty("--accent", settings.accent);
-  accentColorPicker.value = settings.accent;
+function applyTheme(){
+  document.documentElement.style.setProperty("--accent",settings.accent);
+  const hex = settings.accent.replace("#","");
+  const r = parseInt(hex.substring(0,2),16), g = parseInt(hex.substring(2,4),16), b = parseInt(hex.substring(4,6),16);
+  document.documentElement.style.setProperty("--accent-glow",`rgba(${r},${g},${b},0.7)`);
 }
 
-function applySidebarMode() {
-  if (settings.sidebarCompact) {
-    sidebar.classList.add("compact");
-  } else {
-    sidebar.classList.remove("compact");
-  }
-  sidebarCompactToggle.checked = settings.sidebarCompact;
-}
-
-function saveAll() {
-  localStorage.setItem("settings", JSON.stringify(settings));
-}
-
-settingsBtn.addEventListener("click", (e) => {
-  e.stopPropagation();
-  settingsPanel.style.display = settingsPanel.style.display === "block" ? "none" : "block";
-});
-
-accentColorPicker.addEventListener("input", e => {
-  settings.accent = e.target.value; 
-  applyTheme(); 
-  saveAll();
-});
-
-sidebarCompactToggle.addEventListener("change", e => {
-  settings.sidebarCompact = e.target.checked; 
-  applySidebarMode(); 
-  saveAll();
-});
-
-particleToggle.addEventListener("change", e => {
-  settings.particlesEnabled = e.target.checked; 
-  saveAll();
-});
-
-document.addEventListener("click", e => {
-  if(!settingsPanel.contains(e.target) && e.target !== settingsBtn){
-    settingsPanel.style.display = "none";
-  }
-});
-
-applyTheme();
-applySidebarMode();
-
-
-// --- Browser & Proxy Logic ---
-let currentTab = { id: 1 }; // Simplified for the single-frame UI
-let tabs = [currentTab];
-
-function newTab() {
-  document.getElementById("address").value = "";
-  document.getElementById("browser-frame").src = "about:blank";
-  document.getElementById("address").focus();
-}
-
-document.getElementById("newTabBtn").addEventListener("click", newTab);
-
-function resolveInput(input) {
-  if (!input.trim()) return null;
-  if (input.startsWith("http://") || input.startsWith("https://")) {
-    return input;
-  }
-  if (input.includes(".") && !input.includes(" ")) {
-    return "https://" + input;
-  }
-  // Fallback to Google Search
-  return "https://www.google.com/search?q=" + encodeURIComponent(input);
-}
-
-// THE UPDATED NAVIGATE FUNCTION (USING RAILWAY PROXY)
-function navigate(input) {
-  const addressBar = document.getElementById("address");
-  const iframe = document.getElementById("browser-frame");
-  
-  const url = resolveInput(input);
-  if (!url) return;
-
-  addressBar.value = url;
-  iframe.classList.add("loading");
-  
-  // Route traffic through the Node.js backend to bypass X-Frame-Options
-  const proxiedUrl = window.location.origin + "/proxy?url=" + encodeURIComponent(url);
-  
-  iframe.onload = () => {
-    iframe.classList.remove("loading");
-  };
-  
-  iframe.src = proxiedUrl;
-}
-
-document.getElementById("address").addEventListener("keydown", function(e) {
-  if (e.key === "Enter") {
-    navigate(this.value);
-    this.blur();
-  }
-});
-
-/* KEYBOARD SHORTCUTS */
-document.addEventListener("keydown", e => {
-  if(e.ctrlKey && e.key === "t"){ e.preventDefault(); newTab(); }
-  if(e.ctrlKey && e.key === "w"){ e.preventDefault(); document.getElementById("browser-frame").src = "about:blank"; }
-});
-
-/* SERVICE WORKER */
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("sw.js")
-      .then(reg => console.log("SW Registered", reg))
-      .catch(err => console.error("SW Failed", err));
+function toggleIconMode(){settings.sidebarCompact=!settings.sidebarCompact;saveAll();applySidebarMode();}
+function applySidebarMode(){const el=document.getElementById("sidebar");settings.sidebarCompact?el.classList.add("compact"):el.classList.remove("compact");}
+function renderSidebar(){
+  const container=document.getElementById("sidebarLinks"); container.innerHTML="";
+  settings.sidebar.forEach((link,index)=>{
+    const el=document.createElement("div"); el.className="sidebar-link"; el.title=link.title;
+    const icon=document.createElement("img");
+    try{icon.src="https://www.google.com/s2/favicons?domain="+new URL(link.url).hostname;}catch{icon.src="https://www.google.com/favicon.ico";}
+    const text=document.createElement("span"); text.textContent=link.title;
+    const del=document.createElement("span"); del.textContent="×"; del.style.marginLeft="auto"; del.style.color="#ff5c5c";
+    del.onclick=e=>{e.stopPropagation(); settings.sidebar.splice(index,1); saveAll();};
+    el.appendChild(icon); el.appendChild(text); el.appendChild(del);
+    el.onclick=()=>navigate(link.url,true); container.appendChild(el);
   });
 }
-</script>
-</body>
-</html>
+function addToSidebar(){if(!currentTab)return;const url=currentTab.history[currentTab.index];
+if(!url||settings.sidebar.find(l=>l.url===url))return;
+settings.sidebar.push({title:currentTab.title.textContent||"New Tab",url});saveAll();}
+
+function startLoading() {
+  clearInterval(loadingInterval); loadingBar.style.opacity = "1"; loadingBar.style.width = "15%";
+  let p = 15; loadingInterval = setInterval(() => { p += (90 - p) * 0.05; loadingBar.style.width = p + "%"; }, 200);
+}
+function stopLoading() {
+  clearInterval(loadingInterval); loadingBar.style.width = "100%"; 
+  setTimeout(() => { loadingBar.style.opacity = "0"; setTimeout(() => { loadingBar.style.width = "0%"; }, 300); }, 300);
+}
+
+function resolveInput(input){
+  const trimmed = input.trim(), lower = trimmed.toLowerCase();
+  const shortcuts={desmos:"https://www.desmos.com",gmail:"https://mail.google.com",youtube:"https://www.youtube.com"};
+  if(shortcuts[lower]) return shortcuts[lower];
+  if(/^https?:\/\//i.test(trimmed)) return trimmed;
+  if(/^[^\s]+\.[a-z]{2,}(\/.*)?$/i.test(trimmed)) return "https://" + trimmed;
+  const encoded = encodeURIComponent(trimmed);
+  if (settings.searchEngine === "duckduckgo") return `https://duckduckgo.com/?q=${encoded}`;
+  if (settings.searchEngine === "bing") return `https://www.bing.com/search?q=${encoded}`;
+  return `https://www.google.com/search?q=${encoded}&igu=1`;
+}
+
+// PROXIED NAVIGATION LOGIC
+function navigate(input,isShortcut=false){
+  if(!currentTab)return;
+  const url=isShortcut?input:resolveInput(input); if(!url)return;
+  const tab=currentTab; tab.history=tab.history.slice(0,tab.index+1); 
+  tab.history.push(url); tab.index=tab.history.length-1;
+  tab.iframe.classList.add("loading"); startLoading();
+  
+  tab.iframe.onload=()=>{
+    tab.iframe.classList.remove("loading"); stopLoading();
+    try{tab.title.textContent = tab.iframe.contentDocument.title || new URL(url).hostname;}catch{tab.title.textContent = new URL(url).hostname;}
+    address.value=url;
+  }; 
+  // ROUTE THROUGH PROXY
+  const proxiedUrl = window.location.origin + "/proxy?url=" + encodeURIComponent(url);
+  tab.iframe.src=proxiedUrl;
+}
+
+function go(){const val=address.value.trim(); if(val)navigate(val);}
+address.addEventListener("keydown",e=>{if(e.key==="Enter")go();});
+
+function newTab(){
+  const id = Date.now(); const iframe = document.createElement("iframe"); iframe.dataset.id = id; browser.appendChild(iframe);
+  const tab = { id, iframe, history: [], index: -1 }; tabs.push(tab);
+  const btn = document.createElement("div"); btn.className = "tab"; btn.draggable = true;
+  const ts = document.createElement("span"); ts.className="title"; ts.textContent = "Tab"; btn.appendChild(ts);
+  const cb = document.createElement("span"); cb.textContent = "×"; cb.className="tab-close"; cb.onclick = e => { e.stopPropagation(); closeTab(id); }; btn.appendChild(cb);
+  btn.onclick = () => switchTab(id); tabsDiv.appendChild(btn); tab.button = btn; tab.title = ts;
+  switchTab(id);
+  if(settings.particlesEnabled){
+    const d = iframe.contentDocument || iframe.contentWindow.document; d.open();
+    d.write(`<html><head><style>html,body{margin:0;padding:0;overflow:hidden;background:#0b1120;}canvas{display
