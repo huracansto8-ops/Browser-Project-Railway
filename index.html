@@ -49,7 +49,7 @@ body{
   border-bottom:1px solid var(--glass-strong);
   display:flex;
   flex-direction:column;
-  position:relative; /* Required for the loading bar positioning */
+  position:relative;
 }
 .tabs{display:flex;padding:8px;gap:8px;overflow-x:auto;}
 .tab{background:var(--glass);padding:6px 14px;border-radius:20px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:.2s;min-width:40px;max-width:200px;overflow:hidden;}
@@ -66,8 +66,6 @@ select option{background:var(--bg);color:var(--text);}
 iframe{position:absolute;width:100%;height:100%;border:none;display:none;opacity:0;transition:opacity .2s ease;}
 iframe.active{display:block;opacity:1;}
 iframe.loading{opacity:.4;}
-
-/* Loading Bar Styles */
 .loading-bar {
   position: absolute;
   bottom: -1px; 
@@ -113,7 +111,6 @@ iframe.loading{opacity:.4;}
 
 <div id="settingsPanel" style="position:absolute;top:50px;right:20px;width:260px;background:rgba(20,30,50,0.95);color:#e6edf3;border:1px solid rgba(255,255,255,0.2);border-radius:12px;padding:16px;display:none;z-index:999;">
   <h3 style="margin-top:0;">Settings</h3>
-  
   <label style="display:block; margin-bottom:10px;">Search Engine: 
     <select id="searchEnginePicker" style="width:100%; margin-top:4px;">
       <option value="google">Google</option>
@@ -121,7 +118,6 @@ iframe.loading{opacity:.4;}
       <option value="bing">Bing</option>
     </select>
   </label>
-
   <label style="display:block; margin-bottom:10px;">Accent Color: <input type="color" id="accentPicker" value="#4f9cff" style="float:right;"></label>
   <label style="display:block; margin-bottom:10px;">Sidebar Compact: <input type="checkbox" id="sidebarCompactToggle" style="float:right;"></label>
   <label style="display:block; margin-bottom:10px;">Particle Background: <input type="checkbox" id="particleToggle" checked style="float:right;"></label>
@@ -147,9 +143,7 @@ let loadingInterval;
 function applyTheme(){
   document.documentElement.style.setProperty("--accent",settings.accent);
   const hex = settings.accent.replace("#","");
-  const r = parseInt(hex.substring(0,2),16);
-  const g = parseInt(hex.substring(2,4),16);
-  const b = parseInt(hex.substring(4,6),16);
+  const r = parseInt(hex.substring(0,2),16), g = parseInt(hex.substring(2,4),16), b = parseInt(hex.substring(4,6),16);
   document.documentElement.style.setProperty("--accent-glow",`rgba(${r},${g},${b},0.7)`);
 }
 
@@ -177,70 +171,43 @@ function addToSidebar(){if(!currentTab)return;const url=currentTab.history[curre
 if(!url||settings.sidebar.find(l=>l.url===url))return;
 settings.sidebar.push({title:currentTab.title.textContent||"New Tab",url});saveAll();}
 
-/* LOADING BAR LOGIC */
+/* LOADING BAR */
 function startLoading() {
-  clearInterval(loadingInterval);
-  loadingBar.style.opacity = "1";
-  loadingBar.style.width = "15%";
-  let progress = 15;
-  
-  loadingInterval = setInterval(() => {
-    progress += (90 - progress) * 0.05; 
-    loadingBar.style.width = progress + "%";
-  }, 200);
+  clearInterval(loadingInterval); loadingBar.style.opacity = "1"; loadingBar.style.width = "15%"; let progress = 15;
+  loadingInterval = setInterval(() => { progress += (90 - progress) * 0.05; loadingBar.style.width = progress + "%"; }, 200);
 }
-
 function stopLoading() {
-  clearInterval(loadingInterval);
-  loadingBar.style.width = "100%"; 
-  
-  setTimeout(() => {
-    loadingBar.style.opacity = "0"; 
-    setTimeout(() => { loadingBar.style.width = "0%"; }, 300); 
-  }, 300);
+  clearInterval(loadingInterval); loadingBar.style.width = "100%"; 
+  setTimeout(() => { loadingBar.style.opacity = "0"; setTimeout(() => { loadingBar.style.width = "0%"; }, 300); }, 300);
 }
 
 /* NAVIGATION */
 const shortcuts={desmos:"https://www.desmos.com",gmail:"https://mail.google.com",youtube:"https://www.youtube.com"};
 
 function resolveInput(input){
-  const trimmed = input.trim();
-  const lower = trimmed.toLowerCase();
-  
+  const trimmed = input.trim(), lower = trimmed.toLowerCase();
   if(shortcuts[lower]) return shortcuts[lower];
   if(/^https?:\/\//i.test(trimmed)) return trimmed;
   if(/^[^\s]+\.[a-z]{2,}(\/.*)?$/i.test(trimmed)) return "https://" + trimmed;
-  
   const encoded = encodeURIComponent(trimmed);
-  if (settings.searchEngine === "duckduckgo") {
-    return `https://duckduckgo.com/?q=${encoded}`;
-  } else if (settings.searchEngine === "bing") {
-    return `https://www.bing.com/search?q=${encoded}`;
-  } else {
-    return `https://www.google.com/search?q=${encoded}&igu=1`;
-  }
+  if (settings.searchEngine === "duckduckgo") return `https://duckduckgo.com/?q=${encoded}`;
+  if (settings.searchEngine === "bing") return `https://www.bing.com/search?q=${encoded}`;
+  return `https://www.google.com/search?q=${encoded}&igu=1`;
 }
 
-// PROXIED NAVIGATION (The Railway Fix)
+// UPDATED FOR PROXY
 function navigate(input,isShortcut=false){
   if(!currentTab)return;
   const url=isShortcut?input:resolveInput(input); if(!url)return;
   const tab=currentTab; tab.history=tab.history.slice(0,tab.index+1); tab.history.push(url); tab.index=tab.history.length-1;
   tab.iframe.classList.add("loading"); startLoading();
-  tab.iframe.onload=()=>{ tab.iframe.classList.remove("loading"); stopLoading(); address.value=url; tab.title.textContent = new URL(url).hostname; }; 
-  tab.iframe.src= window.location.origin + "/proxy?url=" + encodeURIComponent(url);
-}
-  
-  tab.iframe.classList.add("loading"); 
-  startLoading();
-  
   tab.iframe.onload=()=>{
-    tab.iframe.classList.remove("loading");
-    stopLoading();
+    tab.iframe.classList.remove("loading"); stopLoading();
     try{tab.title.textContent = tab.iframe.contentDocument.title || new URL(url).hostname;}catch{tab.title.textContent = new URL(url).hostname;}
     address.value=url;
   }; 
-  tab.iframe.src=url;
+  // Route through proxy
+  tab.iframe.src = window.location.origin + "/proxy?url=" + encodeURIComponent(url);
 }
 
 function go(){const val=address.value.trim(); if(val)navigate(val);}
@@ -252,82 +219,39 @@ function newTab(){
   const iframe = document.createElement("iframe");
   iframe.dataset.id = id;
   browser.appendChild(iframe);
-
   const tab = { id, iframe, history: [], index: -1 };
   tabs.push(tab);
-
   const btn = document.createElement("div");
-  btn.className = "tab";
-  btn.style.display = "flex"; btn.style.alignItems = "center"; btn.style.gap="6px"; btn.style.overflow="hidden";
-  btn.draggable = true;
-
+  btn.className = "tab"; btn.draggable = true;
   const titleSpan = document.createElement("span");
-  titleSpan.className="title";
-  titleSpan.textContent = "Tab";
-  titleSpan.style.whiteSpace = "nowrap"; titleSpan.style.textOverflow = "ellipsis"; titleSpan.style.overflow="hidden"; titleSpan.style.flexGrow="1";
+  titleSpan.className="title"; titleSpan.textContent = "Tab";
   btn.appendChild(titleSpan);
-
   const closeBtn = document.createElement("span");
-  closeBtn.textContent = "×";
-  closeBtn.className="tab-close";
+  closeBtn.textContent = "×"; closeBtn.className="tab-close";
   closeBtn.onclick = e => { e.stopPropagation(); closeTab(id); };
   btn.appendChild(closeBtn);
-
   btn.onclick = () => switchTab(id);
 
-  btn.addEventListener("dragstart", e => {
-    draggedTab = btn;
-    btn.classList.add("dragging");
-    e.dataTransfer.effectAllowed = "move";
-    btn.style.opacity = "0.5";
-    btn.style.transform = "scale(1.05)";
-  });
-
-  btn.addEventListener("dragend", e => {
-    draggedTab = null;
-    btn.classList.remove("dragging");
-    btn.style.opacity = "1";
-    btn.style.transform = "";
-  });
-
-  btn.addEventListener("dragover", e => {
-    e.preventDefault();
-  });
-
+  // Drag and drop logic
+  btn.addEventListener("dragstart", e => { draggedTab = btn; btn.classList.add("dragging"); e.dataTransfer.effectAllowed = "move"; btn.style.opacity = "0.5"; });
+  btn.addEventListener("dragend", e => { draggedTab = null; btn.classList.remove("dragging"); btn.style.opacity = "1"; });
+  btn.addEventListener("dragover", e => e.preventDefault());
   btn.addEventListener("drop", e => {
-    e.preventDefault();
-    if(!draggedTab || draggedTab === btn) return;
-
+    e.preventDefault(); if(!draggedTab || draggedTab === btn) return;
     const allTabs = Array.from(tabsDiv.children);
-    const draggedIndex = allTabs.indexOf(draggedTab);
-    const targetIndex = allTabs.indexOf(btn);
-
-    if (draggedIndex < targetIndex) {
-      tabsDiv.insertBefore(draggedTab, btn.nextSibling);
-    } else {
-      tabsDiv.insertBefore(draggedTab, btn);
-    }
-
-    const newOrder = [];
-    Array.from(tabsDiv.children).forEach(el => {
-      const t = tabs.find(tab => tab.button === el);
-      if(t) newOrder.push(t);
-    });
-    tabs = newOrder;
+    const draggedIndex = allTabs.indexOf(draggedTab), targetIndex = allTabs.indexOf(btn);
+    if (draggedIndex < targetIndex) tabsDiv.insertBefore(draggedTab, btn.nextSibling); else tabsDiv.insertBefore(draggedTab, btn);
   });
 
   tabsDiv.appendChild(btn);
-
-  tab.button = btn;
-  tab.title = titleSpan;
-
+  tab.button = btn; tab.title = titleSpan;
   switchTab(id);
 
   if(settings.particlesEnabled){
     const doc = iframe.contentDocument || iframe.contentWindow.document;
     doc.open();
     doc.write(`<html><head><style>html,body{margin:0;padding:0;overflow:hidden;background:#0b1120;}canvas{display:block;}</style></head><body><canvas id="particleCanvas"></canvas><script>
-const canvas=document.getElementById('particleCanvas');const ctx=canvas.getContext('2d');let w=canvas.width=window.innerWidth,h=canvas.height=window.innerHeight;window.addEventListener('resize',()=>{w=canvas.width=window.innerWidth;h=canvas.height=window.innerHeight;});const mouse={x:null,y:null,radius:120};window.addEventListener('mousemove',e=>{mouse.x=e.clientX;mouse.y=e.clientY;});window.addEventListener('mouseout',()=>{mouse.x=null;mouse.y=null;});const particles=Array.from({length:120},()=>({x:Math.random()*w,y:Math.random()*h,vx:(Math.random()-0.5)*1.2,vy:(Math.random()-0.5)*1.2,size:Math.random()*2+1.5}));function animate(){ctx.clearRect(0,0,w,h);particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;if(p.x<0||p.x>w)p.vx*=-1;if(p.y<0||p.y>h)p.vy*=-1;if(mouse.x!==null&&mouse.y!==null){const dx=p.x-mouse.x,dy=p.y-mouse.y,dist=Math.sqrt(dx*dx+dy*dy);if(dist<mouse.radius){const force=(mouse.radius-dist)/mouse.radius,angle=Math.atan2(dy,dx);p.vx+=Math.cos(angle)*force*0.5;p.vy+=Math.sin(angle)*force*0.5;}}p.vx*=0.98;p.vy*=0.98;ctx.fillStyle='rgba(79,156,255,0.8)';ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);ctx.fill();});for(let i=0;i<particles.length;i++){for(let j=i+1;j<particles.length;j++){const dx=particles[i].x-particles[j].x,dy=particles[i].y-particles[j].y,dist=Math.sqrt(dx*dx+dy*dy);if(dist<100){const alpha=(1-dist/100)*0.5;ctx.strokeStyle='rgba(79,156,255,'+alpha+')';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(particles[i].x,particles[i].y);ctx.lineTo(particles[j].x,particles[j].y);ctx.stroke();}}}requestAnimationFrame(animate);}animate();
+const canvas=document.getElementById('particleCanvas');const ctx=canvas.getContext('2d');let w=canvas.width=window.innerWidth,h=canvas.height=window.innerHeight;const mouse={x:null,y:null,radius:120};const particles=Array.from({length:120},()=>({x:Math.random()*w,y:Math.random()*h,vx:(Math.random()-0.5)*1.2,vy:(Math.random()-0.5)*1.2,size:Math.random()*2+1.5}));function animate(){ctx.clearRect(0,0,w,h);particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;if(p.x<0||p.x>w)p.vx*=-1;if(p.y<0||p.y>h)p.vy*=-1;ctx.fillStyle='rgba(79,156,255,0.8)';ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);ctx.fill();});requestAnimationFrame(animate);}animate();
 <\/script></body></html>`);
     doc.close();
   }
@@ -335,63 +259,31 @@ const canvas=document.getElementById('particleCanvas');const ctx=canvas.getConte
 
 function switchTab(id){tabs.forEach(tab=>{tab.iframe.classList.remove("active"); tab.button.classList.remove("active");if(tab.id===id){currentTab=tab; tab.iframe.classList.add("active"); tab.button.classList.add("active"); address.value=tab.history[tab.index]||"";}});}
 function closeTab(id){const tab=tabs.find(t=>t.id===id); if(!tab)return; tab.iframe.remove(); tab.button.remove(); tabs=tabs.filter(t=>t.id!==id); if(currentTab?.id===id){if(tabs.length)switchTab(tabs[0].id);else currentTab=null;}}
-function back(){if(currentTab&&currentTab.index>0){currentTab.index--; currentTab.iframe.src=currentTab.history[currentTab.index]; address.value=currentTab.history[currentTab.index];}}
-function forward(){if(currentTab&&currentTab.index<currentTab.history.length-1){currentTab.index++; currentTab.iframe.src=currentTab.history[currentTab.index]; address.value=currentTab.history[currentTab.index];}}
+
+// UPDATED FOR PROXY
+function back(){if(currentTab&&currentTab.index>0){currentTab.index--; currentTab.iframe.src=window.location.origin + "/proxy?url=" + encodeURIComponent(currentTab.history[currentTab.index]); address.value=currentTab.history[currentTab.index];}}
+function forward(){if(currentTab&&currentTab.index<currentTab.history.length-1){currentTab.index++; currentTab.iframe.src=window.location.origin + "/proxy?url=" + encodeURIComponent(currentTab.history[currentTab.index]); address.value=currentTab.history[currentTab.index];}}
 function reload(){if(currentTab)currentTab.iframe.src=currentTab.iframe.src;}
 
-/* SETTINGS */
-const settingsBtn = document.getElementById("settingsBtn");
-const settingsPanel = document.getElementById("settingsPanel");
-const accentPicker = document.getElementById("accentPicker");
-const sidebarCompactToggle = document.getElementById("sidebarCompactToggle");
-const particleToggle = document.getElementById("particleToggle");
-const searchEnginePicker = document.getElementById("searchEnginePicker");
-
-settingsBtn.addEventListener("click", () => {
-  settingsPanel.style.display = settingsPanel.style.display === "none" ? "block" : "none";
-});
-
-accentPicker.addEventListener("input", e => { settings.accent = e.target.value; applyTheme(); saveAll(); });
-
-sidebarCompactToggle.checked = settings.sidebarCompact;
-sidebarCompactToggle.addEventListener("change", e => { settings.sidebarCompact = e.target.checked; applySidebarMode(); saveAll(); });
-
-particleToggle.checked = settings.particlesEnabled;
-particleToggle.addEventListener("change", e => { settings.particlesEnabled = e.target.checked; saveAll(); });
-
-searchEnginePicker.value = settings.searchEngine;
-searchEnginePicker.addEventListener("change", e => { settings.searchEngine = e.target.value; saveAll(); });
-
-document.addEventListener("click", e => {
-  if (!settingsPanel.contains(e.target) && e.target !== settingsBtn) {
-    settingsPanel.style.display = "none";
-  }
-});
+/* SETTINGS LOGIC */
+const settingsBtn = document.getElementById("settingsBtn"), settingsPanel = document.getElementById("settingsPanel");
+settingsBtn.onclick = () => settingsPanel.style.display = settingsPanel.style.display === "none" ? "block" : "none";
+document.getElementById("accentPicker").oninput = e => { settings.accent = e.target.value; applyTheme(); saveAll(); };
+document.getElementById("sidebarCompactToggle").onchange = e => { settings.sidebarCompact = e.target.checked; applySidebarMode(); saveAll(); };
+document.getElementById("particleToggle").onchange = e => { settings.particlesEnabled = e.target.checked; saveAll(); };
+document.getElementById("searchEnginePicker").onchange = e => { settings.searchEngine = e.target.value; saveAll(); };
+document.addEventListener("click", e => { if (!settingsPanel.contains(e.target) && e.target !== settingsBtn) settingsPanel.style.display = "none"; });
 
 function saveAll(){localStorage.setItem("settings",JSON.stringify(settings)); renderSidebar(); applySidebarMode();}
 applyTheme(); newTab(); renderSidebar(); applySidebarMode();
 
-/* KEYBOARD SHORTCUTS */
+/* SHORTCUTS */
 document.addEventListener("keydown", e => {
   if(e.ctrlKey && e.key === "t"){ e.preventDefault(); newTab(); }
   if(e.ctrlKey && e.key === "w"){ e.preventDefault(); if(currentTab) closeTab(currentTab.id); }
-  if(e.ctrlKey && e.key === "Tab"){
-    e.preventDefault();
-    const idx = tabs.indexOf(currentTab);
-    const next = e.shiftKey ? (idx-1+tabs.length)%tabs.length : (idx+1)%tabs.length;
-    switchTab(tabs[next].id);
-  }
 });
 
-/* SERVICE WORKER */
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("sw.js")
-      .then(reg => console.log("Service Worker registered", reg))
-      .catch(err => console.log("Service Worker failed", err));
-  });
-}
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");
 </script>
-
 </body>
 </html>
