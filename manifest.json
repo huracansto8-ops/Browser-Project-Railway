@@ -1,0 +1,15 @@
+{
+  "name": "CS3 Enhanced Browser",
+  "short_name": "CS3",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#0b1120",
+  "theme_color": "#4f9cff",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2210/2210153.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
