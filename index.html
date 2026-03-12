@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>CS3 Enhanced</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#4f9cff">
+<style>
+:root{
+  --bg:#0b1120;
+  --glass:rgba(255,255,255,0.06);
+  --glass-strong:rgba(255,255,255,0.12);
+  --accent:#4f9cff;
+  --accent-glow:rgba(79,156,255,0.7);
+  --text:#e6edf3;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0; 
+  font-family:Inter,system-ui,sans-serif; 
+  background:linear-gradient(145deg,#0b1120,#0e1628); 
+  color:var(--text); 
+  height:100vh; 
+  overflow:hidden;
+}
+.app{display:flex; height:100%; width:100%;}
+.sidebar{
+  width:220px; 
+  background:var(--glass); 
+  backdrop-filter:blur(18px); 
+  border-right:1px solid var(--glass-strong);
+  display:flex; 
+  flex-direction:column; 
+  align-items:center; 
+  padding:12px 6px; 
+  position:relative; 
+  transition:width .25s ease; 
+  overflow:hidden;
+}
+.sidebar.compact { width: 60px; }
+.main-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  position: relative;
+}
+.top-bar {
+  display: flex;
+  padding: 10px;
+  background: var(--glass);
+  border-bottom: 1px solid var(--glass-strong);
+  align-items: center;
+  gap: 10px;
+}
+#address {
+  flex: 1;
+  background: rgba(0,0,0,0.2);
+  border: 1px solid var(--glass-strong);
+  color: var(--text);
+  padding: 10px 15px;
+  border-radius: 8px;
+  outline: none;
+  font-size: 14px;
+  transition: border 0.2s;
+}
+#address:focus {
+  border-color: var(--accent);
+}
+.browser-container {
+  flex: 1;
+  position: relative;
+}
+iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: #fff;
+}
+iframe.loading {
+  opacity: 0.5;
+}
+/* Basic settings panel styling */
+#settingsPanel {
+  display: none;
+  position: absolute;
+  top: 50px;
+  left: 60px;
+  background: #1a2235;
+  border: 1px solid var(--glass-strong);
+  padding: 15px;
+  border-radius: 8px;
+  z-index: 100;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+}
+.settings-row { margin-bottom: 10px; display: flex; justify-content: space-between; gap: 10px; align-items: center; }
+button {
+  background: var(--glass-strong); color: var(--text); border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer;
+}
+button:hover { background: var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="sidebar" id="sidebar">
+    <button id="newTabBtn" style="width:100%; margin-bottom: 10px;">+ New Tab</button>
+    <button id="settingsBtn" style="width:100%; margin-top: auto;">⚙ Settings</button>
+  </div>
+
+  <div id="settingsPanel">
+    <div class="settings-row">
+      <label>Accent Color</label>
+      <input type="color" id="accentColorPicker" value="#4f9cff">
+    </div>
+    <div class="settings-row">
+      <label>Compact Sidebar</label>
+      <input type="checkbox" id="sidebarCompactToggle">
+    </div>
+    <div class="settings-row">
+      <label>Particles</label>
+      <input type="checkbox" id="particleToggle">
+    </div>
+  </div>
+
+  <div class="main-area">
+    <div class="top-bar">
+      <input type="text" id="address" placeholder="Search Google or enter URL..." autocomplete="off">
+    </div>
+    <div class="browser-container">
+      <iframe id="browser-frame" src="about:blank"></iframe>
+    </div>
+  </div>
+</div>
+
+<script>
+// --- Settings & UI Logic ---
+let settings = JSON.parse(localStorage.getItem("settings")) || {
+  accent: "#4f9cff",
+  sidebarCompact: false,
+  particlesEnabled: true
+};
+
+const settingsPanel = document.getElementById("settingsPanel");
+const settingsBtn = document.getElementById("settingsBtn");
+const accentColorPicker = document.getElementById("accentColorPicker");
+const sidebarCompactToggle = document.getElementById("sidebarCompactToggle");
+const particleToggle = document.getElementById("particleToggle");
+const sidebar = document.getElementById("sidebar");
+
+function applyTheme() {
+  document.documentElement.style.setProperty("--accent", settings.accent);
+  accentColorPicker.value = settings.accent;
+}
+
+function applySidebarMode() {
+  if (settings.sidebarCompact) {
+    sidebar.classList.add("compact");
+  } else {
+    sidebar.classList.remove("compact");
+  }
+  sidebarCompactToggle.checked = settings.sidebarCompact;
+}
+
+function saveAll() {
+  localStorage.setItem("settings", JSON.stringify(settings));
+}
+
+settingsBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  settingsPanel.style.display = settingsPanel.style.display === "block" ? "none" : "block";
+});
+
+accentColorPicker.addEventListener("input", e => {
+  settings.accent = e.target.value; 
+  applyTheme(); 
+  saveAll();
+});
+
+sidebarCompactToggle.addEventListener("change", e => {
+  settings.sidebarCompact = e.target.checked; 
+  applySidebarMode(); 
+  saveAll();
+});
+
+particleToggle.addEventListener("change", e => {
+  settings.particlesEnabled = e.target.checked; 
+  saveAll();
+});
+
+document.addEventListener("click", e => {
+  if(!settingsPanel.contains(e.target) && e.target !== settingsBtn){
+    settingsPanel.style.display = "none";
+  }
+});
+
+applyTheme();
+applySidebarMode();
+
+
+// --- Browser & Proxy Logic ---
+let currentTab = { id: 1 }; // Simplified for the single-frame UI
+let tabs = [currentTab];
+
+function newTab() {
+  document.getElementById("address").value = "";
+  document.getElementById("browser-frame").src = "about:blank";
+  document.getElementById("address").focus();
+}
+
+document.getElementById("newTabBtn").addEventListener("click", newTab);
+
+function resolveInput(input) {
+  if (!input.trim()) return null;
+  if (input.startsWith("http://") || input.startsWith("https://")) {
+    return input;
+  }
+  if (input.includes(".") && !input.includes(" ")) {
+    return "https://" + input;
+  }
+  // Fallback to Google Search
+  return "https://www.google.com/search?q=" + encodeURIComponent(input);
+}
+
+// THE UPDATED NAVIGATE FUNCTION (USING RAILWAY PROXY)
+function navigate(input) {
+  const addressBar = document.getElementById("address");
+  const iframe = document.getElementById("browser-frame");
+  
+  const url = resolveInput(input);
+  if (!url) return;
+
+  addressBar.value = url;
+  iframe.classList.add("loading");
+  
+  // Route traffic through the Node.js backend to bypass X-Frame-Options
+  const proxiedUrl = window.location.origin + "/proxy?url=" + encodeURIComponent(url);
+  
+  iframe.onload = () => {
+    iframe.classList.remove("loading");
+  };
+  
+  iframe.src = proxiedUrl;
+}
+
+document.getElementById("address").addEventListener("keydown", function(e) {
+  if (e.key === "Enter") {
+    navigate(this.value);
+    this.blur();
+  }
+});
+
+/* KEYBOARD SHORTCUTS */
+document.addEventListener("keydown", e => {
+  if(e.ctrlKey && e.key === "t"){ e.preventDefault(); newTab(); }
+  if(e.ctrlKey && e.key === "w"){ e.preventDefault(); document.getElementById("browser-frame").src = "about:blank"; }
+});
+
+/* SERVICE WORKER */
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js")
+      .then(reg => console.log("SW Registered", reg))
+      .catch(err => console.error("SW Failed", err));
+  });
+}
+</script>
+</body>
+</html>
